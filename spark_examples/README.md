@@ -4,17 +4,25 @@
 
 ```python
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 from pyspark.sql.types import DoubleType
+from pyspark.sql.functions import * 
 
-
-## I/O - csv
+## I/O - csv/json
 spark = SparkSession.builder.appName('foo').getOrCreate()
-df = spark.read.csv('file_path', header=True)
+df = spark.read.csv('file_path.csv', header=True)
+df = spark.read.json('file_path.jsonl')
 
 # casting
 df = df.withColumn('spi', df['spi'].cast(DoubleType()))
+
+# datetime - time difference
+# Source: https://www.statology.org/pyspark-time-difference/
+df = df.withColumn('start_time', to_timestamp('start_time', 'yyyy-MM-dd HH:mm:ss'))\
+    .withColumn('end_time', to_timestamp('end_time', 'yyyy-MM-dd HH:mm:ss'))
+
+df_new = df.withColumn(
+    'hours_diff', (col('end_time').cast('long') - col('start_time').cast('long'))/3600)
 
 # where
 df2 = df.where(df["Age"] == 23)
@@ -33,20 +41,17 @@ df2 = df.withColumn(
 )
 ```
 
-## Reading csv files
-
+## Setup pipenv
 ```bash
 pipenv --python 3.12
 pipenv install -r requirements.txt
 pipenv shell
-python read_csv.py
 ```
 
-On Windows you might get
+## Scripts
 ```bash
-    > SUCCESS: The process with PID 22616 (child process of PID 4280) has been terminated.
-SUCCESS: The process with PID 4280 (child process of PID 4380) has been terminated.
-SUCCESS: The process with PID 4380 (child process of PID 21016) has been terminated.
+python read_csv.py      # csv files
+python read_jsonl.py    # json logs (dictionary entries, 1 per line)
 ```
-This might be due to a java incompatibility.
-Just type anything & press `enter` to exit.
+
+
